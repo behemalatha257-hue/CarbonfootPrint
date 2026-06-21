@@ -1,0 +1,16 @@
+{
+  "name": "carbon-footprint-tracker",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "A premium carbon footprint tracker and reduction tool",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node tests/calculations.test.js && node --test tests/server.test.js",
+    "test:calculations": "node tests/calculations.test.js",
+    "test:server": "node --test tests/server.test.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  },
+  "devDependencies": {}
+}

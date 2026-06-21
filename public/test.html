@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EcoStep | Browser Validation Test Runner</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-deep: #070a13;
+      --bg-surface: rgba(16, 22, 38, 0.7);
+      --bg-card: rgba(22, 30, 52, 0.6);
+      --border-glow: rgba(255, 255, 255, 0.08);
+      --color-primary: #10b981;
+      --color-secondary: #06b6d4;
+      --color-warning: #f59e0b;
+      --color-danger: #ef4444;
+      --text-primary: #f8fafc;
+      --text-secondary: #94a3b8;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0; padding: 0;
+    }
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background: var(--bg-deep);
+      color: var(--text-primary);
+      padding: 3rem 1.5rem;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .container {
+      width: 100%;
+      max-width: 800px;
+      background: var(--bg-surface);
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--border-glow);
+      border-radius: 16px;
+      padding: 2.5rem;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+    }
+    h1 {
+      font-family: 'Outfit', sans-serif;
+      font-weight: 800;
+      font-size: 2rem;
+      margin-bottom: 0.5rem;
+      background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-align: center;
+    }
+    p.subtitle {
+      color: var(--text-secondary);
+      text-align: center;
+      margin-bottom: 2rem;
+      font-size: 0.95rem;
+    }
+    .test-suite-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      padding-bottom: 1rem;
+    }
+    .status-summary {
+      font-weight: 700;
+      font-size: 1.1rem;
+    }
+    .status-summary.pass {
+      color: var(--color-primary);
+    }
+    .status-summary.fail {
+      color: var(--color-danger);
+    }
+    .test-list {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+    .test-item {
+      background: var(--bg-card);
+      border: 1px solid rgba(255,255,255,0.03);
+      border-radius: 8px;
+      padding: 1.25rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      transition: all 0.2s ease;
+    }
+    .test-item:hover {
+      border-color: rgba(255,255,255,0.1);
+      transform: translateX(4px);
+    }
+    .test-info {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+    .test-name {
+      font-weight: 700;
+      font-size: 1rem;
+      color: var(--text-primary);
+    }
+    .test-desc {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+    }
+    .test-status {
+      font-weight: 800;
+      font-size: 0.9rem;
+      padding: 0.25rem 0.75rem;
+      border-radius: 12px;
+    }
+    .test-status.pass {
+      background: rgba(16, 185, 129, 0.15);
+      color: var(--color-primary);
+    }
+    .test-status.fail {
+      background: rgba(239, 68, 68, 0.15);
+      color: var(--color-danger);
+    }
+    .btn-run {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-weight: 600;
+      background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+      color: var(--bg-deep);
+      border: none;
+      padding: 0.6rem 1.2rem;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: all 0.3s ease;
+    }
+    .btn-run:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 15px rgba(16,185,129,0.3);
+    }
+    .console-pane {
+      margin-top: 2rem;
+      background: #000;
+      border-radius: 8px;
+      padding: 1rem;
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 0.8rem;
+      color: #39ff14;
+      overflow-x: auto;
+      max-height: 200px;
+    }
+    .console-header {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+      margin-bottom: 0.5rem;
+      font-weight: bold;
+    }
+    .footer-bar {
+      margin-top: 2rem;
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      text-align: center;
+    }
+    .footer-bar a {
+      color: var(--color-secondary);
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <h1>Validation Test Suite</h1>
+    <p class="subtitle">EcoStep Calculation & Core Integrity Verification Panel</p>
+    
+    <div class="test-suite-header">
+      <div class="status-summary" id="suite-summary">Status: Initializing...</div>
+      <button class="btn-run" id="btn-re-run">Run Test Suite</button>
+    </div>
+
+    <div class="test-list" id="test-list-container">
+      <!-- Injected via test script -->
+    </div>
+
+    <div class="console-header">System Debug Output</div>
+    <div class="console-pane" id="console-output">
+      Initializing calculation import...
+    </div>
+  </div>
+
+  <div class="footer-bar">
+    <p>&larr; Back to <a href="/">EcoStep Dashboard</a></p>
+  </div>
+
+  <script type="module">
+    import {
+      calculateHomeCarbon,
+      calculateTransportCarbon,
+      calculateDietCarbon,
+      calculateWasteCarbon,
+      calculateTotalCarbon,
+      calculateSimulation,
+      EMISSION_FACTORS
+    } from './js/calculations.js';
+
+    import { calculateStreak } from './js/storage.js';
+
+    const testList = document.getElementById('test-list-container');
+    const consoleOutput = document.getElementById('console-output');
+    const suiteSummary = document.getElementById('suite-summary');
+    const runBtn = document.getElementById('btn-re-run');
+
+    let logs = [];
+    function log(msg) {
+      logs.push(msg);
+      consoleOutput.innerHTML = logs.map(l => `<div>${l}</div>`).join('');
+      consoleOutput.scrollTop = consoleOutput.scrollHeight;
+    }
+
+    function assertEqual(actual, expected, testName) {
+      if (actual !== expected) {
+        throw new Error(`[Assertion Error] Expected ${expected}, got ${actual}`);
+      }
+    }
+
+    const testCases = [
+      {
+        name: "Home energy calculations",
+        desc: "300 kWh electricity, 50 m³ gas, divided by 2 occupants. Output should equal 1,329 kg CO₂e.",
+        fn: () => {
+          const val = calculateHomeCarbon(300, 50, 2);
+          assertEqual(val, 1329);
+        }
+      },
+      {
+        name: "Transportation factor equations",
+        desc: "100 km weekly drive (petrol), 50 km train, 10h short and 20h long flight hours. Output should equal 4,844 kg CO₂e.",
+        fn: () => {
+          const val = calculateTransportCarbon(100, 'petrol', 50, 'train', 10, 20);
+          assertEqual(val, 4844);
+        }
+      },
+      {
+        name: "Dietary baseline factors",
+        desc: "Vegan diet returns the base standard factors. Output should equal 1,500 kg CO₂e.",
+        fn: () => {
+          const val = calculateDietCarbon('vegan');
+          assertEqual(val, EMISSION_FACTORS.diet.vegan);
+        }
+      },
+      {
+        name: "Consumption & waste index factors",
+        desc: "Minimalist/Low-waste footprint mapping. Output should equal 600 kg CO₂e.",
+        fn: () => {
+          const val = calculateWasteCarbon('low');
+          assertEqual(val, EMISSION_FACTORS.waste.low);
+        }
+      },
+      {
+        name: "Aggregate total carbon calculation",
+        desc: "Sum of home energy, transport, diet, and waste metrics under default profiles. Output should equal 8,273 kg CO₂e.",
+        fn: () => {
+          const mockData = {
+            electricityMonthlyKwh: 300,
+            gasMonthlyM3: 50,
+            householdSize: 2,
+            carWeeklyKm: 100,
+            carType: 'petrol',
+            transitWeeklyKm: 50,
+            transitPreferredType: 'train',
+            flightsShortAnnual: 10,
+            flightsLongAnnual: 20,
+            dietType: 'vegan',
+            wasteType: 'low'
+          };
+          const breakdown = calculateTotalCarbon(mockData);
+          assertEqual(breakdown.total, 8273);
+        }
+      },
+      {
+        name: "Simulation sandbox modifications (Electric Car shift)",
+        desc: "Upgrading to an EV drives savings of 780 kg CO₂e under default profiles.",
+        fn: () => {
+          const mockData = {
+            electricityMonthlyKwh: 300,
+            gasMonthlyM3: 50,
+            householdSize: 2,
+            carWeeklyKm: 100,
+            carType: 'petrol',
+            transitWeeklyKm: 50,
+            transitPreferredType: 'train',
+            flightsShortAnnual: 10,
+            flightsLongAnnual: 20,
+            dietType: 'vegan',
+            wasteType: 'low'
+          };
+          const sim = calculateSimulation(mockData, { switchElectricCar: true });
+          assertEqual(sim.savings, 780);
+        }
+      },
+      {
+        name: "Habit builder streak tracking equations",
+        desc: "Calculating streak metrics based on chronological logging events. Streak should maintain if logged today/yesterday.",
+        fn: () => {
+          const todayStr = new Date().toLocaleDateString('en-CA');
+          const yesterday = new Date();
+          yesterday.setDate(yesterday.getDate() - 1);
+          const yesterdayStr = yesterday.toLocaleDateString('en-CA');
+          
+          const completions = [todayStr, yesterdayStr];
+          const streak = calculateStreak(completions);
+          assertEqual(streak, 2);
+        }
+      }
+    ];
+
+    function runSuite() {
+      logs = [];
+      log("Starting test suite execution...");
+      testList.innerHTML = '';
+      
+      let allPass = true;
+      let passCount = 0;
+
+      testCases.forEach((tc, idx) => {
+        log(`Running test ${idx + 1}: ${tc.name}`);
+        const item = document.createElement('div');
+        item.className = 'test-item';
+        
+        try {
+          tc.fn();
+          passCount++;
+          log(`  -> Passed!`);
+          
+          item.innerHTML = `
+            <div class="test-info">
+              <span class="test-name">${tc.name}</span>
+              <span class="test-desc">${tc.desc}</span>
+            </div>
+            <span class="test-status pass">PASS</span>
+          `;
+        } catch (e) {
+          allPass = false;
+          log(`  -> FAILED: ${e.message}`);
+          
+          item.innerHTML = `
+            <div class="test-info">
+              <span class="test-name">${tc.name}</span>
+              <span class="test-desc" style="color: var(--color-danger);">${e.message}</span>
+            </div>
+            <span class="test-status fail">FAIL</span>
+          `;
+        }
+        testList.appendChild(item);
+      });
+
+      if (allPass) {
+        suiteSummary.className = 'status-summary pass';
+        suiteSummary.textContent = `All Tests Passed (${passCount}/${testCases.length})`;
+        log("🎉 Suite completed: All checks successful.");
+      } else {
+        suiteSummary.className = 'status-summary fail';
+        suiteSummary.textContent = `Suite Failures Present (${passCount}/${testCases.length} passed)`;
+        log("❌ Suite completed with errors. See log details.");
+      }
+    }
+
+    runBtn.addEventListener('click', runSuite);
+    runSuite();
+  </script>
+</body>
+</html>

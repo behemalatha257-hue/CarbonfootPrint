@@ -1,0 +1,14 @@
+node_modules
+npm-debug.log
+Dockerfile
+.dockerignore
+.git
+.gitignore
+.agents
+.gemini
+tests
+brain
+logs
+walkthrough.md
+implementation_plan.md
+task.md

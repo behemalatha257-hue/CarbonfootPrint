@@ -458,32 +458,3 @@ function setupUtilityEventListeners() {
     });
   }
 }
-    showOnboardingWizard();
-    setupOnboardingFlow();
-  });
-
-  btnReset.addEventListener('click', (e) => {
-    e.preventDefault();
-    if (confirm('Are you sure you want to clear all your local inputs, completed habits, and XP progress? This cannot be undone.')) {
-      resetAll();
-      window.location.reload();
-    }
-  });
-
-  btnExport.addEventListener('click', (e) => {
-    e.preventDefault();
-    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({
-      inputs: userInputs,
-      progress: userProgress,
-      habits: habitsState,
-      history: carbonHistory
-    }, null, 2));
-    
-    const downloadAnchor = document.createElement('a');
-    downloadAnchor.setAttribute("href", dataStr);
-    downloadAnchor.setAttribute("download", "ecostep_profile.json");
-    document.body.appendChild(downloadAnchor);
-    downloadAnchor.click();
-    downloadAnchor.remove();
-  });
-}

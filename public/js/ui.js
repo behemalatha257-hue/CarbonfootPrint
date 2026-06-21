@@ -485,23 +485,71 @@ export function updateProgressHeader(progress) {
 /**
  * Renders the AI Eco Coach feedback bubble
  */
-export function renderEcoCoachResponse(textHTML) {
+export function renderEcoCoachResponse(content) {
   const responseArea = document.getElementById('coach-response-area');
   if (!responseArea) return;
-  responseArea.innerHTML = textHTML;
+
+  responseArea.innerHTML = '';
+
+  if (!content) {
+    responseArea.textContent = 'No eco-coach summary available at this time.';
+    return;
+  }
+
+  if (typeof content === 'string') {
+    responseArea.textContent = content;
+    return;
+  }
+
+  const card = document.createElement('div');
+  card.className = 'coach-feedback-card';
+
+  const title = document.createElement('h3');
+  title.textContent = content.headline || 'Eco-Coach Assessment';
+  card.appendChild(title);
+
+  const summary = document.createElement('p');
+  summary.textContent = content.summary || '';
+  card.appendChild(summary);
+
+  if (content.topContributor) {
+    const highlight = document.createElement('p');
+    highlight.innerHTML = `🔍 <strong>Top Contributor:</strong> ${content.topContributor.name} (${content.topContributor.value.toLocaleString()} kg CO₂e, ${content.topContributor.share}% of total).`;
+    card.appendChild(highlight);
+  }
+
+  if (Array.isArray(content.recommendations) && content.recommendations.length > 0) {
+    const listTitle = document.createElement('h4');
+    listTitle.textContent = 'Personalized Action Recommendations:';
+    card.appendChild(listTitle);
+
+    const list = document.createElement('ul');
+    content.recommendations.forEach(recommendation => {
+      const item = document.createElement('li');
+      item.textContent = recommendation;
+      list.appendChild(item);
+    });
+    card.appendChild(list);
+  }
+
+  responseArea.appendChild(card);
 }
 
 export function renderEcoChallenge(data) {
   const challengeArea = document.getElementById('challenge-content-area');
   if (!challengeArea) return;
 
+  challengeArea.setAttribute('role', 'region');
+  challengeArea.setAttribute('aria-live', 'polite');
+
   if (!data || !data.challenge) {
     challengeArea.innerHTML = '<p class="field-hint">Unable to generate a challenge at this time.</p>';
     return;
   }
 
-  const actionList = data.challenge.extraTips.map(tip => `<li>${tip}</li>`).join('');
-  const roadmapList = data.roadmap.map(step => `<li><strong>${step.step}:</strong> ${step.detail}</li>`).join('');
+  const extraTips = Array.isArray(data.challenge.extraTips) ? data.challenge.extraTips : [];
+  const actionList = extraTips.map(tip => `<li>${tip}</li>`).join('');
+  const roadmapList = Array.isArray(data.roadmap) ? data.roadmap.map(step => `<li><strong>${step.step}:</strong> ${step.detail}</li>`).join('') : '';
 
   challengeArea.innerHTML = `
     <div class="challenge-summary-card">
@@ -584,7 +632,7 @@ export function renderOffsets(data, onFundProject) {
             <span class="price-usd">$${formatNumber(proj.costUsd)}</span>
             <span class="qty-metric">For ${formatNumber(proj.requiredQty)} ${proj.unitMetric}</span>
           </div>
-          <button class="btn btn-primary btn-sm btn-fund-offset">Fund Project</button>
+          <button class="btn btn-primary btn-sm btn-fund-offset" aria-label="Fund ${proj.name}">Fund Project</button>
         </div>
       </div>
     `;

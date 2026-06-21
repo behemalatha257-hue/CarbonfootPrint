@@ -47,6 +47,28 @@ let activeHabitFilter = 'all';
 const getElement = (id) => document.getElementById(id);
 const hasResults = (results) => results && typeof results.total === 'number';
 
+async function requestJson(url, options = {}) {
+  const headers = { ...(options.headers || {}) };
+  if (options.body && !headers['Content-Type'] && !headers['content-type']) {
+    headers['Content-Type'] = 'application/json';
+  }
+
+  const response = await fetch(url, {
+    ...options,
+    headers
+  });
+
+  const text = await response.text();
+  const payload = text ? JSON.parse(text) : null;
+
+  if (!response.ok) {
+    const message = payload && payload.error ? payload.error : `${response.status} ${response.statusText}`;
+    throw new Error(message);
+  }
+
+  return payload;
+}
+
 /**
  * Initializes the full-stack web application.
  */
@@ -163,19 +185,15 @@ function setupEcoCoachEventListeners() {
     btnCoach.disabled = true;
 
     try {
-      const response = await fetch('/api/eco-coach', {
+      const data = await requestJson('/api/eco-coach', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(currentResults)
       });
 
-      if (!response.ok) throw new Error('API server returned error.');
-
-      const data = await response.json();
-      renderEcoCoachResponse(data.advice);
+      renderEcoCoachResponse(data.advice || data);
     } catch (e) {
       console.error('Eco-Coach Connection Error:', e);
-      renderEcoCoachResponse(`<p style="color: var(--color-danger);">⚠️ <strong>Connection Error:</strong> Could not connect to the Express coaching server. Make sure the Node server is running.</p>`);
+      renderEcoCoachResponse('⚠️ Connection error: Could not connect to the Express coaching server. Please try again later.');
     } finally {
       btnCoach.innerHTML = `
         <svg class="btn-arrow" style="transform: rotate(0deg); width: 16px; height: 16px;" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -193,10 +211,8 @@ function setupEcoCoachEventListeners() {
  */
 async function fetchLeaderboard() {
   try {
-    const response = await fetch('/api/leaderboard');
-    if (!response.ok) throw new Error('Leaderboard API failed.');
-    const data = await response.json();
-    renderLeaderboard(data.users);
+    const data = await requestJson('/api/leaderboard');
+    renderLeaderboard(Array.isArray(data.users) ? data.users : []);
   } catch (e) {
     console.error('Leaderboard Fetch Error:', e);
   }
@@ -209,13 +225,10 @@ async function fetchOffsets() {
   if (!hasResults(currentResults)) return;
 
   try {
-    const response = await fetch(`/api/offsets?emissions=${currentResults.total}`);
-    if (!response.ok) throw new Error('Offset API failed.');
-    const data = await response.json();
+    const data = await requestJson(`/api/offsets?emissions=${currentResults.total}`);
 
     renderOffsets(data, (projectId) => {
-      // Callback triggered when "Fund Project" is clicked
-      userProgress.xp += 100; // Large reward
+      userProgress.xp += 100;
       userProgress.level = Math.floor(userProgress.xp / 100) + 1;
       saveUserProgress(userProgress);
       updateProgressHeader(userProgress);
@@ -277,15 +290,11 @@ async function fetchEcoChallenge() {
   challengeArea.innerHTML = '<p class="field-hint">Generating your personalized challenge...</p>';
 
   try {
-    const response = await fetch('/api/eco-challenge', {
+    const data = await requestJson('/api/eco-challenge', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(currentResults)
     });
 
-    if (!response.ok) throw new Error('Eco challenge API failed.');
-
-    const data = await response.json();
     renderEcoChallenge(data);
   } catch (error) {
     console.error('Eco Challenge Fetch Error:', error);
@@ -364,6 +373,10 @@ function setupSandboxEventListeners() {
   const toggleGreen = document.getElementById('toggle-green-energy');
   const toggleEv = document.getElementById('toggle-ev');
   const rangeFlights = document.getElementById('range-flights-reduction');
+
+  if (!rangeBike || !rangeMeatless || !toggleGreen || !toggleEv || !rangeFlights) {
+    return;
+  }
 
   const triggerUpdate = () => {
     updateSandbox(userInputs, currentResults);
@@ -458,3 +471,4 @@ function setupUtilityEventListeners() {
     });
   }
 }
+

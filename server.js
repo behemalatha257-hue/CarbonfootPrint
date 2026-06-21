@@ -9,99 +9,87 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 app.disable('x-powered-by');
+app.use((req, res, next) => {
+  res.set({
+    'Content-Security-Policy': "default-src 'self'; script-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none';",
+    'X-Content-Type-Options': 'nosniff',
+    'X-Frame-Options': 'DENY',
+    'Referrer-Policy': 'no-referrer',
+    'Permissions-Policy': 'geolocation=(), microphone=(), camera=(), interest-cohort=()'
+  });
+  next();
+});
 app.use(express.json({ limit: '10kb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 app.get('/api/health', (_req, res) => res.json({ status: 'ok' }));
 
-// 1. AI Eco-Coach Advice API
-app.post('/api/eco-coach', (req, res) => {
-  const { total, home, transport, diet, waste } = req.body;
+function parseNumber(value) {
+  const numberValue = Number(value);
+  return Number.isFinite(numberValue) ? numberValue : 0;
+}
 
-  if (total === undefined || total === null) {
-    return res.status(400).json({ error: 'Incomplete carbon footprint inputs.' });
-  }
+function getSectorBreakdown(rawInput = {}) {
+  return [
+    { name: 'Home Energy', value: parseNumber(rawInput.home) },
+    { name: 'Transportation', value: parseNumber(rawInput.transport) },
+    { name: 'Diet & Food', value: parseNumber(rawInput.diet) },
+    { name: 'Consumption & Waste', value: parseNumber(rawInput.waste) }
+  ].sort((a, b) => b.value - a.value);
+}
 
-  // Find the highest contributor
-  const sectors = [
-    { name: 'Home Energy', value: Number(home || 0) },
-    { name: 'Transportation', value: Number(transport || 0) },
-    { name: 'Diet & Food', value: Number(diet || 0) },
-    { name: 'Consumption & Waste', value: Number(waste || 0) }
-  ];
-
-  sectors.sort((a, b) => b.value - a.value);
+export function buildCoachAdvice(total, sectors) {
   const topSector = sectors[0];
-
-  let adviceHTML = `<h3>Eco-Coach Assessment</h3>`;
-  
-  if (total < 2000) {
-    adviceHTML += `<p>🎉 <strong>Incredible Standing!</strong> Your footprint is <strong>${total.toLocaleString()} kg CO₂e/yr</strong>, which is already within the global 1.5°C threshold (< 2,000 kg). You are leading by example!</p>`;
-  } else {
-    adviceHTML += `<p>Your annual footprint is <strong>${total.toLocaleString()} kg CO₂e/yr</strong>. To meet global climate targets, aim to reduce this below 2,000 kg.</p>`;
-  }
-
-  const topShare = total > 0 ? Math.round((topSector.value / total) * 100) : 0;
-  adviceHTML += `<p>🔍 <strong>Top Contributor:</strong> Your largest emission source is <strong>${topSector.name}</strong> at <strong>${topSector.value.toLocaleString()} kg CO₂e/yr</strong> (${topShare}% of total).</p>`;
-
-  adviceHTML += `<h4>🎯 Personalized Action Recommendations:</h4><ul>`;
-
-  // Specific advices based on the highest category
-  if (topSector.name === 'Home Energy') {
-    adviceHTML += `
-      <li><strong>Deploy Solar Power:</strong> Switching to solar energy or a green electric tariff offset can reduce home emissions by up to 75%.</li>
-      <li><strong>Smart Climate Control:</strong> Turning down your thermostat by just 1°C in winter reduces gas heating emissions by ~8%.</li>
-      <li><strong>Eliminate Vampire Power:</strong> Unplugging idle power blocks and standby devices can shave off 10% of electricity use.</li>
-    `;
-  } else if (topSector.name === 'Transportation') {
-    adviceHTML += `
-      <li><strong>Switch to Transit:</strong> Shifting 40 km of weekly car commutes to bus or metro trains prevents up to 250 kg of CO₂ per year.</li>
-      <li><strong>Upgrade to Electric:</strong> If you drive daily, upgrading to an electric vehicle reduces fuel emissions by over 75% on standard grids.</li>
-      <li><strong>Minimize Aviation:</strong> Air travel is carbon-intensive. Reducing medium-haul flights by just 2 hours prevents 220 kg of carbon.</li>
-    `;
-  } else if (topSector.name === 'Diet & Food') {
-    adviceHTML += `
-      <li><strong>Adopt Meatless Mondays:</strong> Removing beef and pork from your diet for just 2 days a week cuts food emissions by ~450 kg/yr.</li>
-      <li><strong>Shift to Vegan Breakfasts:</strong> Replacing dairy milk and eggs with plant alternatives reduces agricultural methane demand.</li>
-      <li><strong>Eat Local & Seasonal:</strong> Sourcing foods grown within 150 km minimizes cargo transit emissions (food miles).</li>
-    `;
-  } else {
-    adviceHTML += `
-      <li><strong>Target Zero Waste:</strong> Avoiding single-use plastic containers and bringing bags prevents packaging production footprints.</li>
-      <li><strong>Relaunch Kitchen Composting:</strong> Composting food scraps prevents them from generating methane in deep landfills.</li>
-      <li><strong>Buy Secondhand:</strong> Buying clothing and electronics refurbished or pre-loved cuts manufacturing emissions by up to 80%.</li>
-    `;
-  }
-
-  // General secondary advice
   const secondSector = sectors[1];
+  const topShare = total > 0 ? Math.round((topSector.value / total) * 100) : 0;
+  const summary = total < 2000
+    ? `🎉 Incredible Standing! Your footprint is ${total.toLocaleString()} kg CO₂e/yr, which is already within the global 1.5°C threshold (< 2,000 kg). You are leading by example!`
+    : `Your annual footprint is ${total.toLocaleString()} kg CO₂e/yr. To meet global climate targets, aim to reduce this below 2,000 kg.`;
+
+  const recommendations = [];
+  if (topSector.name === 'Home Energy') {
+    recommendations.push(
+      'Deploy solar panels or switch to a green electricity tariff to reduce home emissions by up to 75%.',
+      'Turn down your thermostat by 1°C during winter to reduce heating emissions by roughly 8%.',
+      'Unplug standby devices and identify the biggest household energy drains.'
+    );
+  } else if (topSector.name === 'Transportation') {
+    recommendations.push(
+      'Replace one weekly car commute with public transit or active travel to reduce transport emissions.',
+      'Upgrade to a hybrid or electric vehicle if you drive regularly to cut fuel emissions significantly.',
+      'Reduce air travel where possible; even one fewer round trip saves hundreds of kilograms of CO₂e.'
+    );
+  } else if (topSector.name === 'Diet & Food') {
+    recommendations.push(
+      'Try Meatless Mondays or more plant-based meals to lower food-related emissions.',
+      'Switch dairy to plant-based alternatives for breakfast and snacks.',
+      'Choose local and seasonal foods to reduce food miles and packaging impact.'
+    );
+  } else {
+    recommendations.push(
+      'Avoid single-use packaging and replace disposables with reusable items.',
+      'Start composting organic waste to keep methane out of landfills.',
+      'Buy secondhand products instead of new ones to lower manufacturing emissions.'
+    );
+  }
+
   if (secondSector && secondSector.value > 1000) {
-    adviceHTML += `<li><strong>Secondary Target (${secondSector.name}):</strong> Since this accounts for ${secondSector.value.toLocaleString()} kg, consider auditing this category next to maximize savings.</li>`;
+    recommendations.push(`Secondary target: review your ${secondSector.name.toLowerCase()} footprint, which currently adds ${secondSector.value.toLocaleString()} kg CO₂e per year.`);
   }
 
-  adviceHTML += `</ul>`;
+  return {
+    headline: total < 2000 ? 'Incredible Standing!' : 'Personalized Reduction Plan',
+    summary,
+    topContributor: {
+      name: topSector.name,
+      value: topSector.value,
+      share: topShare
+    },
+    recommendations
+  };
+}
 
-  res.json({
-    highestSector: topSector.name,
-    advice: adviceHTML
-  });
-});
-
-// 1.5. Personalized Eco-Challenge Generator
-app.post('/api/eco-challenge', (req, res) => {
-  const { total, home, transport, diet, waste } = req.body;
-  if (total === undefined || total === null) {
-    return res.status(400).json({ error: 'Incomplete carbon footprint inputs.' });
-  }
-
-  const sectors = [
-    { name: 'Home Energy', value: Number(home || 0) },
-    { name: 'Transportation', value: Number(transport || 0) },
-    { name: 'Diet & Food', value: Number(diet || 0) },
-    { name: 'Consumption & Waste', value: Number(waste || 0) }
-  ];
-  sectors.sort((a, b) => b.value - a.value);
+export function buildEcoChallenge(total, sectors) {
   const topSector = sectors[0];
-
   const challenge = {
     title: 'Eco Step-Up Mission',
     summary: 'Build momentum with one high-impact action and a focused improvement path for the next 14 days.',
@@ -144,18 +132,41 @@ app.post('/api/eco-challenge', (req, res) => {
     ];
   }
 
-  const roadmap = [
-    { step: 'Audit Your Top Emission Area', detail: `Review your ${topSector.name.toLowerCase()} profile and set one measurable action.` },
-    { step: 'Take One High-Impact Action', detail: challenge.target },
-    { step: 'Log Progress and Celebrate', detail: 'Record your results and update your trend history weekly.' }
-  ];
-
-  res.json({
+  return {
     challenge,
-    roadmap,
+    roadmap: [
+      { step: 'Audit Your Top Emission Area', detail: `Review your ${topSector.name.toLowerCase()} profile and set one measurable action.` },
+      { step: 'Take One High-Impact Action', detail: challenge.target },
+      { step: 'Log Progress and Celebrate', detail: 'Record your results and update your trend history weekly.' }
+    ],
     topSector: topSector.name,
     projectedReduction: Math.round(total * 0.10)
+  };
+}
+
+// 1. AI Eco-Coach Advice API
+app.post('/api/eco-coach', (req, res) => {
+  const total = parseNumber(req.body.total);
+  if (total <= 0) {
+    return res.status(400).json({ error: 'Incomplete or invalid carbon footprint inputs.' });
+  }
+
+  const sectors = getSectorBreakdown(req.body);
+  res.json({
+    highestSector: sectors[0].name,
+    advice: buildCoachAdvice(total, sectors)
   });
+});
+
+// 1.5. Personalized Eco-Challenge Generator
+app.post('/api/eco-challenge', (req, res) => {
+  const total = parseNumber(req.body.total);
+  if (total <= 0) {
+    return res.status(400).json({ error: 'Incomplete or invalid carbon footprint inputs.' });
+  }
+
+  const sectors = getSectorBreakdown(req.body);
+  res.json(buildEcoChallenge(total, sectors));
 });
 
 // 2. Regional Community Leaderboard API
@@ -172,7 +183,10 @@ app.get('/api/leaderboard', (req, res) => {
 
 // 3. Carbon Offsetting Marketplace API
 app.get('/api/offsets', (req, res) => {
-  const emissions = Number(req.query.emissions || 0);
+  const emissions = parseNumber(req.query.emissions);
+  if (emissions < 0) {
+    return res.status(400).json({ error: 'Emissions must be a non-negative number.' });
+  }
 
   // A mature tree absorbs roughly 22 kg of CO2 per year
   const treesNeeded = Math.ceil(emissions / 22);
@@ -215,9 +229,20 @@ app.get('/api/offsets', (req, res) => {
   });
 });
 
+// API 404 handler for unknown backend routes
+app.use('/api', (_req, res) => {
+  res.status(404).json({ error: 'Unknown API route.' });
+});
+
 // Catch-all: serve index.html for frontend routing
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+// Global error handler
+app.use((err, _req, res, _next) => {
+  console.error('Unexpected server error:', err);
+  res.status(500).json({ error: 'Internal server error.' });
 });
 
 export default app;

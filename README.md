@@ -37,8 +37,7 @@ flowchart TD
 
     class A,B,C,D,E,F,G,H,I,J process
 
-
-     <img width="1406" height="1048" alt="Screenshot 2026-06-21 231200" src="https://github.com/user-attachments/assets/194d0998-238f-4922-ba79-d77e455c5dab" />
+      <img width="1406" height="1048" alt="image" src="https://github.com/user-attachments/assets/3823c102-b138-4613-97b7-ca8beee17582" />
 
 ```
 

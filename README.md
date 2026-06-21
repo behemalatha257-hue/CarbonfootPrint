@@ -37,8 +37,6 @@ flowchart TD
 
     class A,B,C,D,E,F,G,H,I,J process
 
-      <img width="1406" height="1048" alt="image" src="https://github.com/user-attachments/assets/3823c102-b138-4613-97b7-ca8beee17582" />
-
 ```
 
 ### System Architecture

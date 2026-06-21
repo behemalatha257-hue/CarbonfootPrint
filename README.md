@@ -36,6 +36,10 @@ flowchart TD
     classDef process fill:#1e293b,stroke:#cbd5e1,stroke-width:1.5px,color:#fff
 
     class A,B,C,D,E,F,G,H,I,J process
+
+
+     <img width="1406" height="1048" alt="Screenshot 2026-06-21 231200" src="https://github.com/user-attachments/assets/194d0998-238f-4922-ba79-d77e455c5dab" />
+
 ```
 
 ### System Architecture
